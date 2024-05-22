@@ -1,5 +1,5 @@
-SHOW databases;
-USE magicbrickdb;
+-- SHOW databases;
+-- USE magicbrickdb;
 
 
 -- CREATE TABLE flats (
