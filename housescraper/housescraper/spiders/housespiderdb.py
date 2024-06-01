@@ -2,12 +2,14 @@ import scrapy
 from housescraper.items import HouseItem
 import json
 import re
+import numpy as np
 import csv
 
 class MySpider(scrapy.Spider):
     name = 'housespider'
     allowed_domains = ['magicbricks.com']
-    start_urls = ['https://www.magicbricks.com/flats-in-mumbai-for-sale-pppfs']
+    # start_urls = ['https://www.magicbricks.com/flats-in-mumbai-for-sale-pppfs']
+    start_urls=['https://www.magicbricks.com/flats-in-new-delhi-for-sale-pppfs']
 
     def __init__(self):
         super(MySpider, self).__init__()
@@ -26,8 +28,15 @@ class MySpider(scrapy.Spider):
         item['property_name'] = flat.css('a.mb-srp__card__society--name::text').get()
         item['image_url'] = flat.css('div.mb-srp__card__photo__fig img::attr(data-src)').get()
 
-        item['carpet_area'] = flat.css('[data-summary="carpet-area"] .mb-srp__card__summary--value::text').get()
-        item['super_area'] = flat.css('[data-summary="super-area"] .mb-srp__card__summary--value::text').get()
+        carpet_area = flat.css('[data-summary="carpet-area"] .mb-srp__card__summary--value::text').get()
+        super_area = flat.css('[data-summary="super-area"] .mb-srp__card__summary--value::text').get()
+
+        if carpet_area:
+           item['area'] = f'Carpet area:{carpet_area}'
+        elif super_area:
+           item['area'] = f'Super area:{super_area}'
+        else:
+           item['area'] = 'Nan'
         item['status'] = flat.xpath('.//div[@class="mb-srp__card__summary--label" and contains(text(), "Status")]/following-sibling::div[@class="mb-srp__card__summary--value"]/text()').get()
         item['furnishing'] = flat.xpath('.//div[@class="mb-srp__card__summary--label" and contains(text(), "Furnishing")]/following-sibling::div[@class="mb-srp__card__summary--value"]/text()').get()
         item['facing'] = flat.xpath('.//div[@class="mb-srp__card__summary--label" and contains(text(), "facing")]/following-sibling::div[@class="mb-srp__card__summary--value"]/text()').get()
@@ -68,7 +77,7 @@ class MySpider(scrapy.Spider):
             yield flat_item
 
         # Crawling to next page url
-        if self.page_count < 5:
+        if self.page_count < 2:
             self.page_count += 1
             next_page_relative_url = response.css('li.mb-pagination__list--item.active + li.mb-pagination__list--item a::attr(href)').get()
             if next_page_relative_url:
@@ -88,32 +97,33 @@ class MySpider(scrapy.Spider):
         flat_item['balcony'] = balcony.strip() if balcony else '0'
         flat_item['parking'] = response.css('[data-icon="covered-parking"] span.mb-ldp__dtls__body__summary--highlight::text').get().strip() if response.css('[data-icon="covered-parking"] span.mb-ldp__dtls__body__summary--highlight::text').get() else '0'
         flat_item['amenities'] = response.css('div.mb-ldp__amenities li::text').getall() + response.css('.mb-ldp__dtls__body__summary--right__icons .mb-ldp__dtls__body__summary--item::text').getall()
+        flat_item['url_overview']=response.css('a.mb-ldp__dtls__title--link::attr(href)').get()
         yield flat_item
-        url_overview=response.css('a.mb-ldp__dtls__title--link::attr(href)').get()
-        if url_overview:
-           yield scrapy.Request(url=url_overview, callback=self.parse_overview, meta={'flat_info': flat_item})
-        else:
-            self.logger.warning("Skipping invalid URL: %s", url_overview)
+    #     if flat_item['url_overview']:
+    #        yield scrapy.Request(url=flat_item['url_overview'], callback=self.parse_overview, meta={'flat_info': flat_item})
+    #     else:
+    #         self.logger.warning("Skipping invalid URL: %s", flat_item['url_overview'])
 
-    #Extracting overview data from the next overview url of each Landmark
-    def parse_overview(self, response):
-        flat_item = response.meta['flat_info']
-        flat_item['NearbyLocality'] = response.css('div.factoids__card__body__item::text').getall()
-        rating = []
-        review_title= response.css('div.loc-det__livablityblock__reviewtitle::text').getall()
-        review_value=response.css('div.loc-det__livablityblock__reviewvalue::text').getall()
+    # #Extracting overview data from the next overview url of each Landmark
+    # def parse_overview(self, response):
+    #     flat_item = response.meta['flat_info']
+    #     flat_item['NearbyLocality'] = response.css('div.factoids__card__body__item::text').getall().strip()
+    #     rating = []
+    #     review_title= response.css('div.loc-det__livablityblock__reviewtitle::text').getall()
+    #     review_value=response.css('div.loc-det__livablityblock__reviewvalue::text').getall()
         
-        for title,value in zip(review_title, review_value):
-            review_combined=f'{title} {value}'
-            rating.append(review_combined)
+    #     for title,value in zip(review_title, review_value):
+    #         review_combined=f'{title} {value}'
+    #         rating.append(review_combined)
         
-        landmark_title=response.css('h1::text').get().strip()
-        review_value=response.css('.loc-det__blocks__ratinglabel::text').get()
-        review_landmark= f'{landmark_title} {review_value}/5'
-        rating.append(review_landmark)
+    #     landmark_title=response.css('h1::text').get().strip()
+    #     review_value=response.css('.loc-det__blocks__ratinglabel::text').get()
+    #     review_landmark= f'{landmark_title} {review_value}/5'
+    #     rating.append(review_landmark)
 
-        flat_item['rating']=rating
+    #     flat_item['rating']=rating
 
 
-        yield flat_item
+    #     yield flat_item
+
 

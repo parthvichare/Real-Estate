@@ -39,12 +39,12 @@ class HousescraperPipeline:
         sql = """
             INSERT INTO flats (
                 property_id, Landmark, title, price, area_sqft,
-                property_name, image_url, carpet_area, super_area, status,
+                property_name, image_url, area, status,
                 furnishing, facing, floor, overlook, url, latitude, longitude,
                 addressLocality, addressRegion, Beds, bathroom, balcony,
-                parking, amenities, NearbyLocality, rating
+                parking, amenities, url_overview,NearbyLocality, rating
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                      %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                      %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,%s, %s)
         """
         values = (
             item.get('property_id'),
@@ -54,8 +54,7 @@ class HousescraperPipeline:
             item.get('area_sqft'),
             item.get('property_name'),
             item.get('image_url'),
-            item.get('carpet_area'),
-            item.get('super_area'),
+            item.get('area'),
             item.get('status'),
             item.get('furnishing'),
             item.get('facing'),
@@ -71,6 +70,7 @@ class HousescraperPipeline:
             item.get('balcony'),
             item.get('parking'),
             ', '.join(item.get('amenities', [])),  # Join list of amenities to string
+            item.get('url_overview'),
             ', '.join(item.get('NearbyLocality', [])),  # Join list of NearbyLocality to string
             ', '.join(item.get('rating', []))  # Join list of ratings to string
         )
@@ -83,7 +83,6 @@ class HousescraperPipeline:
         
         return item
 
-print('Hello')
 
 
     

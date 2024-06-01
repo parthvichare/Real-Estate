@@ -14,8 +14,7 @@ class HouseItem(scrapy.Item):
     area_sqft = scrapy.Field()
     property_name = scrapy.Field()
     image_url = scrapy.Field()
-    carpet_area = scrapy.Field()
-    super_area = scrapy.Field()
+    area = scrapy.Field()
     status = scrapy.Field()
     furnishing = scrapy.Field()
     facing = scrapy.Field()
@@ -30,6 +29,7 @@ class HouseItem(scrapy.Item):
     bathroom = scrapy.Field()
     balcony = scrapy.Field()
     parking = scrapy.Field()
+    url_overview=scrapy.Field()
     amenities = scrapy.Field()
 
     # New fields for property info
