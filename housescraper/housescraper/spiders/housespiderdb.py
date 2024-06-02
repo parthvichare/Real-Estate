@@ -71,7 +71,7 @@ class MySpider(scrapy.Spider):
                     flat_item['url'] = url_value
                     url=flat_item['url']
                     if url:
-                      yield Request(url=url, callback=self.parse_url, meta={'flat_info': flat_item})
+                      yield scrapy.Request(url=url, callback=self.parse_url, meta={'flat_info': flat_item})
                     else:
                         self.logger.warning("Skipping invalid URL: %s", url)
                 except json.JSONDecodeError:
@@ -85,7 +85,7 @@ class MySpider(scrapy.Spider):
             next_page_relative_url = response.css('li.mb-pagination__list--item.active + li.mb-pagination__list--item a::attr(href)').get()
             if next_page_relative_url:
                 next_page_url = response.urljoin(next_page_relative_url)
-                yield Request(url=next_page_url, callback=self.parse)
+                yield scrapy.Request(url=next_page_url, callback=self.parse)
 
     def parse_url(self, response):
         flat_item = response.meta['flat_info']
@@ -119,7 +119,6 @@ class MySpider(scrapy.Spider):
             property_det.append(url_data)
         flat_item['flat_details']=property_det
         
-        yield flat_item
         # Request the URL overview page
         yield Request(flat_item['url_overview'], callback=self.parse_url_overview, meta={'flat_item': flat_item})
      

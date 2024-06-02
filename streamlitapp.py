@@ -45,8 +45,10 @@ for row in rows:
         'super_area':row[21],
         'url':row[22],
         'amenities':row[23],
-        'NearbyLocality':row[24],
-        'rating':row[25]
+        'url_overview':row[24],
+        'flat_details':row[25],
+        'NearbyLocality':row[25],
+        # 'rating':row[26]
     })
 
 cursor.close()
