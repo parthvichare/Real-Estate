@@ -4,6 +4,9 @@ import json
 import re
 import numpy as np
 import csv
+import requests
+from bs4 import BeautifulSoup
+from scrapy.http import Request
 
 class MySpider(scrapy.Spider):
     name = 'housespider'
@@ -68,7 +71,7 @@ class MySpider(scrapy.Spider):
                     flat_item['url'] = url_value
                     url=flat_item['url']
                     if url:
-                      yield scrapy.Request(url=url, callback=self.parse_url, meta={'flat_info': flat_item})
+                      yield Request(url=url, callback=self.parse_url, meta={'flat_info': flat_item})
                     else:
                         self.logger.warning("Skipping invalid URL: %s", url)
                 except json.JSONDecodeError:
@@ -82,7 +85,7 @@ class MySpider(scrapy.Spider):
             next_page_relative_url = response.css('li.mb-pagination__list--item.active + li.mb-pagination__list--item a::attr(href)').get()
             if next_page_relative_url:
                 next_page_url = response.urljoin(next_page_relative_url)
-                yield scrapy.Request(url=next_page_url, callback=self.parse)
+                yield Request(url=next_page_url, callback=self.parse)
 
     def parse_url(self, response):
         flat_item = response.meta['flat_info']
@@ -98,7 +101,60 @@ class MySpider(scrapy.Spider):
         flat_item['parking'] = response.css('[data-icon="covered-parking"] span.mb-ldp__dtls__body__summary--highlight::text').get().strip() if response.css('[data-icon="covered-parking"] span.mb-ldp__dtls__body__summary--highlight::text').get() else '0'
         flat_item['amenities'] = response.css('div.mb-ldp__amenities li::text').getall() + response.css('.mb-ldp__dtls__body__summary--right__icons .mb-ldp__dtls__body__summary--item::text').getall()
         flat_item['url_overview']=response.css('a.mb-ldp__dtls__title--link::attr(href)').get()
+        
+
+        #Scraping with Beautiful Soup the more details of the flats
+        soup = BeautifulSoup(response.text, 'html.parser') 
+        property_det=[]
+
+        div_label = soup.find_all('div', class_='mb-ldp__more-dtl__list--label')
+        div_value = soup.find_all('div', class_='mb-ldp__more-dtl__list--value')
+        
+        for label, value in zip(div_label, div_value):
+            url_data=[]
+            label_text = label.text.strip()
+            value_text = value.text.strip()            
+            # if label_text in ['Flooring', 'Age of Construction', 'Water Availability', 'Status of Electricity']:
+            url_data.append(f'{label_text}: {value_text}')
+            property_det.append(url_data)
+        flat_item['flat_details']=property_det
+        
         yield flat_item
+        # Request the URL overview page
+        yield Request(flat_item['url_overview'], callback=self.parse_url_overview, meta={'flat_item': flat_item})
+     
+
+    #Scraping Data with BeautifulSoup
+    def parse_url_overview(self, response):
+        # Retrieve flat_item from meta
+        flat_item = response.meta['flat_item']
+        
+        # Use Beautiful Soup to parse the HTML content
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # Initialize an empty list for h1
+        Locality = []
+
+        # Find all <div> elements with class 'factoids__card__body__item'
+        div_elements = soup.find_all('div', class_='factoids__card__body__item')
+        
+        # Iterate over each <div> element
+        for div_element in div_elements:
+            # Find the text within the <div> element and append it to h1 list
+            Locality.append(div_element.text.strip())
+
+        # Assign h1 list to 'NearbyLocality' in flat_item
+        flat_item['NearbyLocality'] = Locality
+        
+        # Yield the modified flat_item
+        yield flat_item
+
+
+
+
+
+
+
     #     if flat_item['url_overview']:
     #        yield scrapy.Request(url=flat_item['url_overview'], callback=self.parse_overview, meta={'flat_info': flat_item})
     #     else:

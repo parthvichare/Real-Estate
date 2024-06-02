@@ -30,6 +30,7 @@ class HouseItem(scrapy.Item):
     balcony = scrapy.Field()
     parking = scrapy.Field()
     url_overview=scrapy.Field()
+    flat_details=scrapy.Field()
     amenities = scrapy.Field()
 
     # New fields for property info

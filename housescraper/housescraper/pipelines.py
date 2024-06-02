@@ -42,9 +42,9 @@ class HousescraperPipeline:
                 property_name, image_url, area, status,
                 furnishing, facing, floor, overlook, url, latitude, longitude,
                 addressLocality, addressRegion, Beds, bathroom, balcony,
-                parking, amenities, url_overview,NearbyLocality, rating
+                parking, amenities, url_overview,flat_details,NearbyLocality, rating
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                      %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,%s, %s)
+                      %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,%s, %s,%s)
         """
         values = (
             item.get('property_id'),
@@ -71,6 +71,7 @@ class HousescraperPipeline:
             item.get('parking'),
             ', '.join(item.get('amenities', [])),  # Join list of amenities to string
             item.get('url_overview'),
+            ', '.join(map(str, item.get('flat_details', []))),
             ', '.join(item.get('NearbyLocality', [])),  # Join list of NearbyLocality to string
             ', '.join(item.get('rating', []))  # Join list of ratings to string
         )
