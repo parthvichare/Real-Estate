@@ -6,6 +6,7 @@
 # useful for handling different item types with a single interface
 import mysql.connector
 from itemadapter import ItemAdapter
+import numpy as np
 
 class HousescraperPipeline:
     def __init__(self, db_user, db_password, db_host, db_name):
@@ -34,8 +35,38 @@ class HousescraperPipeline:
 
     def close_spider(self, spider):
         self.conn.close()
+    
+    def treat_floor(self,x):
+        x=str(x)
+        x=x.replace('Ground','0')
+        x=x.split(' ')[0].split('/')[0].strip()
+        if x.isdigit():
+            return int(x)
+        else:
+            return None
+    
+    def treat_price(self, x):
+        if x == 'Call for price':
+            return np.nan
+        elif type(x) == float:
+            return x
+        elif x[1] == 'Lac':
+            return round(float(x[0]) / 100, 2)
+        else:
+            return round(float(x[0]), 2)
+        
+
 
     def process_item(self, item, spider):
+        price_value=item.get('price')
+        if price_value:
+            # Split the price before applying treat_price
+            price_split = price_value.split(' ')
+            
+            # Apply the treat_price logic to the split price
+            treated_price = self.treat_price(price_split)
+        else:
+            treated_price = np.nan  # or handle this case as needed
         sql = """
             INSERT INTO flats (
                 property_id, Landmark, title, price, area_sqft,
@@ -50,7 +81,7 @@ class HousescraperPipeline:
             item.get('property_id'),
             item.get('Landmark'),
             item.get('title'),
-            item.get('price'),
+            treated_price,
             item.get('area_sqft'),
             item.get('property_name'),
             item.get('image_url'),
@@ -58,7 +89,7 @@ class HousescraperPipeline:
             item.get('status'),
             item.get('furnishing'),
             item.get('facing'),
-            item.get('floor'),
+            self.treat_floor(item.get('floor')), 
             item.get('overlook'),
             item.get('url'),
             item.get('latitude'),
@@ -83,84 +114,3 @@ class HousescraperPipeline:
             self.conn.rollback()
         
         return item
-
-
-
-    
-    # def process_item(self,item,spider):
-    #     cleaned_item=self.cleaned_item(item)
-    #     validated_item=self.validate_item(cleaned_item)
-
-    # def cleaned_item(self,item):
-    #     cleaned_item = {key: self.clean_value(value) for key, value in item.items()}
-    #     return cleaned_item
-    
-    # def clean_and_validate_data(data):
-    #     cleaned_data={}
-
-    #     for key,values in data.items():
-    #         if 
-#Cleaning the data 
-
-
-
-
-
-
-# data=[
-# {'Beds': '2',
-#  'Landmark': 'Prabhadevi, Mumbai',
-#  'NearbyLocality': ['Government Technical High School Prabhadevi',
-#                     "St Francis Xavier's High School",
-#                     'Ramanand Arya Dav College',
-#                     'Kanjurmarg Railway Station',
-#                     'R City Mall',
-#                     'Huma Mall',
-#                     'Sahakari Bhandar',
-#                     'DMart Ready',
-#                     'DMart Ready',
-#                     'Vijay Sales',
-#                     'Krishna Nagar Parel, Mumbai',
-#                     'Bhawani Sankar, Mumbai',
-#                     'Gokhale Road, Mumbai',
-#                     'Elphinstone, Mumbai',
-#                     'Century Mills, Mumbai',
-#                     'Dadar West, Mumbai',
-#                     'P K Das & Associates',
-#                     'Lodha Ithink Techno Campus',
-#                     'Godrej And Boyce Industry Estate',
-#                     'Khed Galli',
-#                     'Chhatrapati Shivaji Maharaj International Airport'],
-#  'addressLocality': 'Prabhadevi',
-#  'addressRegion': 'Mumbai',
-#  'amenities': ['Power Back Up',
-#                'Lift',
-#                'Rain Water Harvesting',
-#                'Club House',
-#                'Swimming Pool',
-#                'Gymnasium'],
-#  'area_sqft': '35625 per sqft ',
-#  'balcony': '0',
-#  'bathroom': '2',
-#  'carpet_area': '481 sqft',
-#  'facing': 'West',
-#  'floor': '10 out of 10',
-#  'furnishing': 'Unfurnished',
-#  'image_url': 'https://img.staticmb.com/mbphoto/property/cropped_images/2024/Mar/19/Photo_h300_w450/71908911_1_PropertyImage1710848892723_300_450.jpg',
-#  'latitude': '19.0158585103406',
-#  'longitude': '72.8295254470428',
-#  'overlook': 'Garden/Park, Main Road',
-#  'parking': '0',
-#  'price': '2.28 Cr ',
-#  'property_id': '71908911',
-#  'property_name': 'Eon One',
-#  'rating': ['Environment 4.5/5',
-#             'Commuting 4.2/5',
-#             'Places of Interest 4.4/5',
-#             'Prabhadevi, Mumbai 4.4/5'],
-#  'status': 'Ready to Move',
-#  'super_area': None,
-#  'title': '2 BHK Flat for Sale in Prabhadevi, Mumbai',
-#  'url': 'https://www.magicbricks.com/propertyDetails/2-BHK-640-Sq-ft-Multistorey-Apartment-FOR-Sale-Prabhadevi-in-Mumbai&id=4d423731393038393131'}
-
-# ]
